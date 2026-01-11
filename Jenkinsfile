@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'SlaveA'  // Replace with your worker node's label
-    }
+    agent any
     
     environment {
         DOCKER_IMAGE = 'discoverdevops/my-app:latest'
