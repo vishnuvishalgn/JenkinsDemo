@@ -1,53 +1,39 @@
 pipeline {
-    agent any
-    
-    environment {
-        DOCKER_IMAGE = 'discoverdevops/my-app:latest'
-        GIT_REPO = 'https://github.com/discover-devops/JenkinsDemo.git'
-    }
-
-    stages {
-        stage('Clone Source Code') {
-            steps {
-                git branch: 'main', url: "${GIT_REPO}"
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    def appImage = docker.build(DOCKER_IMAGE)
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry('', 'dockerhub-credentials') {
-                        docker.image(DOCKER_IMAGE).push()
-                    }
-                }
-            }
-        }
-
-        stage('Deploy Application') {
-            steps {
-                script {
-                    sh """
-                    docker stop my-app || true
-                    docker rm my-app || true
-                    docker run -d --name my-app -p 5000:5000 ${DOCKER_IMAGE}
-                    """
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            echo 'Cleaning up workspace...'
-            cleanWs()
-        }
-    }
+   agent any
+   environment {
+       IMAGE_NAME = "jenkinsdemo:latest"
+       CONTAINER_NAME = "jenkinsdemo"
+   }
+   stages {
+       stage('Checkout Code') {
+           steps {
+               git branch: 'main',
+                   url: 'https://github.com/vishnuvishalgn/JenkinsDemo.git'
+           }
+       }
+       stage('Build Docker Image') {
+           steps {
+               sh '''
+                 docker build -t ${IMAGE_NAME} .
+               '''
+           }
+       }
+       stage('Deploy Container') {
+           steps {
+               sh '''
+                 docker stop ${CONTAINER_NAME} || true
+                 docker rm ${CONTAINER_NAME} || true
+                 docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${IMAGE_NAME}
+               '''
+           }
+       }
+   }
+   post {
+       success {
+           echo "✅ CI/CD Pipeline completed successfully"
+       }
+       failure {
+           echo "❌ CI/CD Pipeline failed"
+       }
+   }
 }
